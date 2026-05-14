@@ -1,13 +1,14 @@
-package com.siddhant.backend.application.dto;
+package com.siddhant.backend.jobapplication.dto;
 
-import com.siddhant.backend.application.entity.ApplicationStatus;
+import java.time.LocalDate;
+
+import com.siddhant.backend.jobapplication.entity.ApplicationStatus;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDate;
 
 @Getter
 @Setter

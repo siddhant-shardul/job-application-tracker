@@ -1,4 +1,4 @@
-package com.siddhant.backend.application.entity;
+package com.siddhant.backend.jobapplication.entity;
 
 public enum ApplicationStatus {
     APPLIED,

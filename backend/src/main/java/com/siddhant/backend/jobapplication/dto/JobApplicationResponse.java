@@ -1,11 +1,12 @@
-package com.siddhant.backend.application.dto;
-
-import com.siddhant.backend.application.entity.ApplicationStatus;
-import lombok.Builder;
-import lombok.Getter;
+package com.siddhant.backend.jobapplication.dto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+import com.siddhant.backend.jobapplication.entity.ApplicationStatus;
+
+import lombok.Builder;
+import lombok.Getter;
 
 @Getter
 @Builder
