@@ -1,19 +1,21 @@
 package com.siddhant.backend.jobapplication.service;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.siddhant.backend.company.entity.Company;
 import com.siddhant.backend.company.repository.CompanyRepository;
 import com.siddhant.backend.jobapplication.dto.JobApplicationRequest;
 import com.siddhant.backend.jobapplication.dto.JobApplicationResponse;
+import com.siddhant.backend.jobapplication.entity.ApplicationStatus;
 import com.siddhant.backend.jobapplication.entity.JobApplication;
 import com.siddhant.backend.jobapplication.repository.JobApplicationRepository;
 import com.siddhant.backend.student.entity.Student;
 import com.siddhant.backend.student.repository.StudentRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -41,12 +43,16 @@ public class JobApplicationService {
         return mapToResponse(savedJobApplication);
     }
 
-    public List<JobApplicationResponse> getAllJobApplications() {
-        return jobApplicationRepository.findAll()
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
-    }
+    public List<JobApplicationResponse> getJobApplications(
+        Long studentId,
+        Long companyId,
+        ApplicationStatus status
+) {
+    return jobApplicationRepository.findWithFilters(studentId, companyId, status)
+            .stream()
+            .map(this::mapToResponse)
+            .toList();
+}
 
     public JobApplicationResponse getJobApplicationById(Long id) {
         JobApplication jobApplication = getJobApplicationOrThrow(id);
