@@ -22,4 +22,6 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
             @Param("companyId") Long companyId,
             @Param("status") ApplicationStatus status
     );
+
+    long countByStatus(ApplicationStatus status);
 }
