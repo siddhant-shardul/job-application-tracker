@@ -8,42 +8,30 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/students")
 @RequiredArgsConstructor
 public class StudentController {
 
-    private final StudentService studentService;
+private final StudentService studentService;
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public StudentResponse createStudent(@Valid @RequestBody StudentRequest request) {
-        return studentService.createStudent(request);
-    }
+@PostMapping("/me")
+@ResponseStatus(HttpStatus.CREATED)
+public StudentResponse createMyProfile(
+        @Valid @RequestBody StudentRequest request) {
 
-    @GetMapping
-    public List<StudentResponse> getAllStudents() {
-        return studentService.getAllStudents();
-    }
+    return studentService.createStudent(request);
+}
 
-    @GetMapping("/{id}")
-    public StudentResponse getStudentById(@PathVariable Long id) {
-        return studentService.getStudentById(id);
-    }
+@GetMapping("/me")
+public StudentResponse getMyProfile() {
+    return studentService.getMyProfile();
+}
 
-    @PutMapping("/{id}")
-    public StudentResponse updateStudent(
-            @PathVariable Long id,
-            @Valid @RequestBody StudentRequest request
-    ) {
-        return studentService.updateStudent(id, request);
-    }
+@PutMapping("/me")
+public StudentResponse updateMyProfile(
+        @Valid @RequestBody StudentRequest request) {
 
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteStudent(@PathVariable Long id) {
-        studentService.deleteStudent(id);
-    }
+    return studentService.updateMyProfile(request);
+}
 }

@@ -1,5 +1,6 @@
 package com.siddhant.backend.student.entity;
 
+import com.siddhant.backend.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -41,6 +42,10 @@ public class Student {
     private String githubUrl;
 
     private String portfolioUrl;
+
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private User user;
 
     private LocalDateTime createdAt;
 
