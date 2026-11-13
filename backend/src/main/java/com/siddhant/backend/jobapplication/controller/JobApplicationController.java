@@ -53,7 +53,7 @@ public class JobApplicationController {
     @PutMapping("/{id}")
     public JobApplicationResponse updateJobApplication(
             @PathVariable Long id,
-            @Valid @RequestBody JobApplicationRequest request
+            @RequestBody JobApplicationRequest request
     ) {
         return jobApplicationService.updateJobApplication(id, request);
     }

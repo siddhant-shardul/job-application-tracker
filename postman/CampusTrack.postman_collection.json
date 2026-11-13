@@ -1,0 +1,77 @@
+{
+  "info": {
+    "name": "CampusTrack Placement API",
+    "description": "Manual smoke-test requests for the CampusTrack Spring Boot API. Register a student and provision an admin as described in README.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api" },
+    { "key": "token", "value": "" },
+    { "key": "companyId", "value": "1" },
+    { "key": "jobId", "value": "1" },
+    { "key": "applicationId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register student",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Asha Patil\",\n  \"email\": \"asha@example.com\",\n  \"password\": \"StudentPass123\"\n}" },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [{ "listen": "test", "script": { "exec": ["if (pm.response.code === 200) {", "  const body = pm.response.json();", "  if (body.token) pm.collectionVariables.set('token', body.token);", "}"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"asha@example.com\",\n  \"password\": \"StudentPass123\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Current user",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/auth/me" }
+        }
+      ]
+    },
+    {
+      "name": "Student profile",
+      "item": [
+        {
+          "name": "Create or update my profile",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Asha Patil\",\n  \"email\": \"asha@example.com\",\n  \"phone\": \"9876543210\",\n  \"collegeName\": \"Your College\",\n  \"degree\": \"BCA\",\n  \"branch\": \"Computer Applications\",\n  \"graduationYear\": 2027,\n  \"academicYear\": \"Final Year\",\n  \"cgpa\": 8.2,\n  \"skills\": \"Java, React, SQL\"\n}" },
+            "url": "{{baseUrl}}/students/me"
+          }
+        },
+        { "name": "Get my profile", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/students/me" } }
+      ]
+    },
+    {
+      "name": "Companies and jobs",
+      "item": [
+        { "name": "List companies", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/companies" } },
+        { "name": "Create company (admin)", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Northstar Labs\",\n  \"website\": \"https://example.com\",\n  \"location\": \"Pune\",\n  \"description\": \"Technology and product engineering company\"\n}" }, "url": "{{baseUrl}}/companies" } },
+        { "name": "List open jobs", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/jobs" } },
+        { "name": "Create job (admin)", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"companyId\": {{companyId}},\n  \"title\": \"Graduate Engineer Trainee\",\n  \"description\": \"Work with the engineering team on internal products.\",\n  \"location\": \"Pune\",\n  \"salaryLpa\": 4.5,\n  \"eligibility\": \"Final-year students\",\n  \"requiredSkills\": \"Java, SQL\",\n  \"deadline\": \"2026-12-15\",\n  \"active\": true\n}" }, "url": "{{baseUrl}}/jobs" } }
+      ]
+    },
+    {
+      "name": "Applications and dashboard",
+      "item": [
+        { "name": "Apply for job", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"jobId\": {{jobId}},\n  \"notes\": \"Interested in the role\"\n}" }, "url": "{{baseUrl}}/job-applications" } },
+        { "name": "List applications", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/job-applications" } },
+        { "name": "Update application status (admin)", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"SHORTLISTED\",\n  \"notes\": \"Selected for the next round\"\n}" }, "url": "{{baseUrl}}/job-applications/{{applicationId}}" } },
+        { "name": "Admin dashboard stats", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/dashboard/stats" } }
+      ]
+    }
+  ]
+}

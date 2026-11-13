@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -35,9 +36,8 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException ex
     ) {
 
-        String errorMessage = ex.getBindingResult()
-                .getFieldError()
-                .getDefaultMessage();
+        String errorMessage = ex.getBindingResult().getFieldErrors().stream()
+                .findFirst().map(error -> error.getDefaultMessage()).orElse("Request validation failed");
 
         ApiErrorResponse errorResponse = ApiErrorResponse.builder()
                 .status(HttpStatus.BAD_REQUEST.value())
@@ -66,6 +66,16 @@ public class GlobalExceptionHandler {
                 errorResponse,
                 HttpStatus.BAD_REQUEST
         );
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        ApiErrorResponse errorResponse = ApiErrorResponse.builder()
+                .status(HttpStatus.PAYLOAD_TOO_LARGE.value())
+                .message("Uploaded file exceeds the allowed size limit")
+                .timestamp(LocalDateTime.now())
+                .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
     @ExceptionHandler(Exception.class)

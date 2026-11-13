@@ -47,6 +47,9 @@ public StudentResponse createStudent(StudentRequest request) {
             .degree(request.getDegree())
             .branch(request.getBranch())
             .graduationYear(request.getGraduationYear())
+            .academicYear(request.getAcademicYear())
+            .cgpa(request.getCgpa())
+            .skills(request.getSkills())
             .currentLocation(request.getCurrentLocation())
             .linkedinUrl(request.getLinkedinUrl())
             .githubUrl(request.getGithubUrl())
@@ -96,6 +99,9 @@ public StudentResponse updateMyProfile(StudentRequest request) {
     student.setDegree(request.getDegree());
     student.setBranch(request.getBranch());
     student.setGraduationYear(request.getGraduationYear());
+    student.setAcademicYear(request.getAcademicYear());
+    student.setCgpa(request.getCgpa());
+    student.setSkills(request.getSkills());
     student.setCurrentLocation(request.getCurrentLocation());
     student.setLinkedinUrl(request.getLinkedinUrl());
     student.setGithubUrl(request.getGithubUrl());
@@ -135,6 +141,9 @@ private StudentResponse mapToResponse(Student student) {
             .degree(student.getDegree())
             .branch(student.getBranch())
             .graduationYear(student.getGraduationYear())
+            .academicYear(student.getAcademicYear())
+            .cgpa(student.getCgpa())
+            .skills(student.getSkills())
             .currentLocation(student.getCurrentLocation())
             .linkedinUrl(student.getLinkedinUrl())
             .githubUrl(student.getGithubUrl())

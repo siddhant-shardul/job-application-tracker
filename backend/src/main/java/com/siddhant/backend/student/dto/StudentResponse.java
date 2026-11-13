@@ -17,6 +17,9 @@ public class StudentResponse {
     private String degree;
     private String branch;
     private Integer graduationYear;
+    private String academicYear;
+    private Double cgpa;
+    private String skills;
     private String currentLocation;
     private String linkedinUrl;
     private String githubUrl;

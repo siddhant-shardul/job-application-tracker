@@ -35,6 +35,13 @@ public class Student {
 
     private Integer graduationYear;
 
+    private String academicYear;
+
+    private Double cgpa;
+
+    @Column(length = 1000)
+    private String skills;
+
     private String currentLocation;
 
     private String linkedinUrl;

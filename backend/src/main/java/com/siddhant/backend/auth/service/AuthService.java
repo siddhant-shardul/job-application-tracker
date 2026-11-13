@@ -10,6 +10,8 @@ import com.siddhant.backend.security.util.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -21,13 +23,14 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request) {
 
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
         }
 
         User user = User.builder()
                 .fullName(request.getFullName())
-                .email(request.getEmail())
+                .email(normalizedEmail)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.STUDENT)
                 .build();
@@ -39,19 +42,25 @@ public class AuthService {
         return AuthResponse.builder()
                 .token(token)
                 .message("Registration successful")
+                .id(user.getId()).fullName(user.getFullName()).email(user.getEmail()).role(user.getRole().name())
                 .build();
+    }
+
+    public User getUser(String email) {
+        return userRepository.findByEmail(email.trim().toLowerCase())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
     }
 
     public AuthResponse login(LoginRequest request) {
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+        User user = userRepository.findByEmail(request.getEmail().trim().toLowerCase())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
 
         if (!passwordEncoder.matches(
                 request.getPassword(),
                 user.getPassword())) {
 
-            throw new RuntimeException("Invalid credentials");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
         String token = jwtService.generateToken(user.getEmail());
@@ -59,6 +68,7 @@ public class AuthService {
         return AuthResponse.builder()
                 .token(token)
                 .message("Login successful")
+                .id(user.getId()).fullName(user.getFullName()).email(user.getEmail()).role(user.getRole().name())
                 .build();
     }
 }

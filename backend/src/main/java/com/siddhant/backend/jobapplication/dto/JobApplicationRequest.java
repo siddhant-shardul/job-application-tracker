@@ -4,8 +4,6 @@ import java.time.LocalDate;
 
 import com.siddhant.backend.jobapplication.entity.ApplicationStatus;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,13 +12,14 @@ import lombok.Setter;
 @Setter
 public class JobApplicationRequest {
 
-    @NotNull(message = "Student ID is required")
+    // Student identity is derived from the JWT; any client-supplied ID is ignored.
     private Long studentId;
 
-    @NotNull(message = "Company ID is required")
+    // A current job-posting ID is used for new applications. Legacy company/role fields remain for compatibility.
+    private Long jobId;
+
     private Long companyId;
 
-    @NotBlank(message = "Job role is required")
     private String jobRole;
 
     private LocalDate applicationDate;

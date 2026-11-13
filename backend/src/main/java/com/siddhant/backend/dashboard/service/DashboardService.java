@@ -3,6 +3,7 @@ package com.siddhant.backend.dashboard.service;
 import com.siddhant.backend.company.repository.CompanyRepository;
 import com.siddhant.backend.dashboard.dto.DashboardResponse;
 import com.siddhant.backend.jobapplication.entity.ApplicationStatus;
+import com.siddhant.backend.job.repository.JobRepository;
 import com.siddhant.backend.jobapplication.repository.JobApplicationRepository;
 import com.siddhant.backend.student.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,8 @@ public class DashboardService {
 
     private final JobApplicationRepository jobApplicationRepository;
 
+    private final JobRepository jobRepository;
+
     public DashboardResponse getDashboardStats() {
 
         long totalStudents = studentRepository.count();
@@ -28,6 +31,8 @@ public class DashboardService {
 
         long appliedCount =
                 jobApplicationRepository.countByStatus(ApplicationStatus.APPLIED);
+
+        long underReviewCount = jobApplicationRepository.countByStatus(ApplicationStatus.UNDER_REVIEW);
 
         long shortlistedCount =
                 jobApplicationRepository.countByStatus(ApplicationStatus.SHORTLISTED);
@@ -46,6 +51,8 @@ public class DashboardService {
                 .totalCompanies(totalCompanies)
                 .totalApplications(totalApplications)
                 .appliedCount(appliedCount)
+                .underReviewCount(underReviewCount)
+                .totalJobs(jobRepository.count())
                 .shortlistedCount(shortlistedCount)
                 .interviewCount(interviewCount)
                 .selectedCount(selectedCount)

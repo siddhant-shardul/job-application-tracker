@@ -3,6 +3,8 @@ package com.siddhant.backend.company.service;
 import com.siddhant.backend.company.dto.CompanyRequest;
 import com.siddhant.backend.company.entity.Company;
 import com.siddhant.backend.company.repository.CompanyRepository;
+import com.siddhant.backend.job.repository.JobRepository;
+import com.siddhant.backend.jobapplication.repository.JobApplicationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,8 @@ import java.util.List;
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
+    private final JobRepository jobRepository;
+    private final JobApplicationRepository applicationRepository;
 
     public Company createCompany(CompanyRequest request) {
         Company company = Company.builder()
@@ -52,6 +56,9 @@ public class CompanyService {
 
     public void deleteCompany(Long id) {
         Company company = getCompanyById(id);
+        if (jobRepository.existsByCompanyId(id) || applicationRepository.existsByCompanyId(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Company is linked to job postings or application history and cannot be deleted");
+        }
         companyRepository.delete(company);
     }
 }

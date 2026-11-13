@@ -19,6 +19,10 @@ public class DashboardResponse {
 
     private long appliedCount;
 
+    private long underReviewCount;
+
+    private long totalJobs;
+
     private long shortlistedCount;
 
     private long interviewCount;

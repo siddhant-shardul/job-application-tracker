@@ -3,6 +3,10 @@ package com.siddhant.backend.student.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,7 +30,17 @@ public class StudentRequest {
 
     private String branch;
 
+    @Min(2000) @Max(2100)
     private Integer graduationYear;
+
+    @Size(max = 40)
+    private String academicYear;
+
+    @DecimalMin("0.0") @DecimalMax("10.0")
+    private Double cgpa;
+
+    @Size(max = 1000)
+    private String skills;
 
     private String currentLocation;
 

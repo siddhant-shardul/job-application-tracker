@@ -1,130 +1,127 @@
 package com.siddhant.backend.jobapplication.service;
-import java.util.List;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
+import com.siddhant.backend.auth.entity.User;
+import com.siddhant.backend.auth.repository.UserRepository;
 import com.siddhant.backend.company.entity.Company;
-import com.siddhant.backend.company.repository.CompanyRepository;
 import com.siddhant.backend.jobapplication.dto.JobApplicationRequest;
+import com.siddhant.backend.job.entity.Job;
+import com.siddhant.backend.job.repository.JobRepository;
 import com.siddhant.backend.jobapplication.dto.JobApplicationResponse;
 import com.siddhant.backend.jobapplication.entity.ApplicationStatus;
 import com.siddhant.backend.jobapplication.entity.JobApplication;
 import com.siddhant.backend.jobapplication.repository.JobApplicationRepository;
 import com.siddhant.backend.student.entity.Student;
 import com.siddhant.backend.student.repository.StudentRepository;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class JobApplicationService {
-
-    private final JobApplicationRepository jobApplicationRepository;
-    private final StudentRepository studentRepository;
-    private final CompanyRepository companyRepository;
+    private final JobApplicationRepository applications;
+    private final StudentRepository students;
+    private final UserRepository users;
+    private final JobRepository jobs;
 
     public JobApplicationResponse createJobApplication(JobApplicationRequest request) {
-        Student student = getStudentOrThrow(request.getStudentId());
-        Company company = getCompanyOrThrow(request.getCompanyId());
-
-        JobApplication jobApplication = JobApplication.builder()
-                .student(student)
-                .company(company)
-                .jobRole(request.getJobRole())
-                .applicationDate(request.getApplicationDate())
-                .status(request.getStatus())
-                .notes(request.getNotes())
-                .build();
-
-        JobApplication savedJobApplication = jobApplicationRepository.save(jobApplication);
-
-        return mapToResponse(savedJobApplication);
+        Student student = currentStudent();
+        Job job;
+        if (request.getJobId() != null) {
+            job = jobs.findById(request.getJobId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job posting not found"));
+        } else if (request.getCompanyId() != null && request.getJobRole() != null && !request.getJobRole().isBlank()) {
+            job = jobs.findFirstByCompanyIdAndTitleIgnoreCaseAndActiveTrue(request.getCompanyId(), request.getJobRole().trim())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Apply through an active job posting"));
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Job posting is required");
+        }
+        if (!job.isActive() || (job.getDeadline() != null && job.getDeadline().isBefore(LocalDate.now()))) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This job posting is no longer accepting applications");
+        }
+        Company company = job.getCompany();
+        String jobRole = job.getTitle();
+        if (applications.existsByStudentIdAndCompanyIdAndJobRoleIgnoreCase(student.getId(), company.getId(), jobRole)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "You have already applied for this role");
+        }
+        JobApplication application = JobApplication.builder()
+                .student(student).company(company).jobRole(jobRole)
+                .applicationDate(LocalDate.now()).status(ApplicationStatus.APPLIED)
+                .notes(request.getNotes()).build();
+        return map(applications.save(application));
     }
 
-    public List<JobApplicationResponse> getJobApplications(
-        Long studentId,
-        Long companyId,
-        ApplicationStatus status
-) {
-    return jobApplicationRepository.findWithFilters(studentId, companyId, status)
-            .stream()
-            .map(this::mapToResponse)
-            .toList();
-}
+    @Transactional(readOnly = true)
+    public List<JobApplicationResponse> getJobApplications(Long studentId, Long companyId, ApplicationStatus status) {
+        boolean admin = isAdmin();
+        Student own = admin ? null : currentStudent();
+        if (!admin && studentId != null && !studentId.equals(own.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot view another student's applications");
+        }
+        Long effectiveStudentId = admin ? studentId : own.getId();
+        return applications.findWithFilters(effectiveStudentId, companyId, status)
+                .stream().map(this::map).toList();
+    }
 
+    @Transactional(readOnly = true)
     public JobApplicationResponse getJobApplicationById(Long id) {
-        JobApplication jobApplication = getJobApplicationOrThrow(id);
-        return mapToResponse(jobApplication);
+        JobApplication app = get(id);
+        verifyOwnerOrAdmin(app);
+        return map(app);
     }
 
     public JobApplicationResponse updateJobApplication(Long id, JobApplicationRequest request) {
-        JobApplication jobApplication = getJobApplicationOrThrow(id);
-
-        Student student = getStudentOrThrow(request.getStudentId());
-        Company company = getCompanyOrThrow(request.getCompanyId());
-
-        jobApplication.setStudent(student);
-        jobApplication.setCompany(company);
-        jobApplication.setJobRole(request.getJobRole());
-        jobApplication.setNotes(request.getNotes());
-
-        if (request.getApplicationDate() != null) {
-            jobApplication.setApplicationDate(request.getApplicationDate());
-        }
-
-        if (request.getStatus() != null) {
-            jobApplication.setStatus(request.getStatus());
-        }
-
-        JobApplication updatedJobApplication = jobApplicationRepository.save(jobApplication);
-
-        return mapToResponse(updatedJobApplication);
+        if (!isAdmin()) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only administrators can update application status");
+        JobApplication app = get(id);
+        if (request.getStatus() == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status is required");
+        app.setStatus(request.getStatus());
+        if (request.getNotes() != null) app.setNotes(request.getNotes());
+        return map(applications.save(app));
     }
 
     public void deleteJobApplication(Long id) {
-        JobApplication jobApplication = getJobApplicationOrThrow(id);
-        jobApplicationRepository.delete(jobApplication);
+        JobApplication app = get(id);
+        verifyOwnerOrAdmin(app);
+        if (!isAdmin() && app.getStatus() != ApplicationStatus.APPLIED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only applications in APPLIED status can be withdrawn");
+        }
+        applications.delete(app);
     }
 
-    private JobApplication getJobApplicationOrThrow(Long id) {
-        return jobApplicationRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Job application not found with id: " + id
-                ));
+    private Student currentStudent() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = users.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        return students.findByUserId(user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Create your student profile before applying"));
     }
 
-    private Student getStudentOrThrow(Long studentId) {
-        return studentRepository.findById(studentId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Student not found with id: " + studentId
-                ));
+    private boolean isAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
     }
 
-    private Company getCompanyOrThrow(Long companyId) {
-        return companyRepository.findById(companyId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Company not found with id: " + companyId
-                ));
+    private void verifyOwnerOrAdmin(JobApplication app) {
+        if (!isAdmin() && !app.getStudent().getUser().getEmail()
+                .equals(SecurityContextHolder.getContext().getAuthentication().getName())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
     }
 
-    private JobApplicationResponse mapToResponse(JobApplication jobApplication) {
-        return JobApplicationResponse.builder()
-                .id(jobApplication.getId())
-                .studentId(jobApplication.getStudent().getId())
-                .studentName(jobApplication.getStudent().getFullName())
-                .companyId(jobApplication.getCompany().getId())
-                .companyName(jobApplication.getCompany().getName())
-                .jobRole(jobApplication.getJobRole())
-                .applicationDate(jobApplication.getApplicationDate())
-                .status(jobApplication.getStatus())
-                .notes(jobApplication.getNotes())
-                .createdAt(jobApplication.getCreatedAt())
-                .updatedAt(jobApplication.getUpdatedAt())
-                .build();
+    private JobApplication get(Long id) {
+        return applications.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found"));
+    }
+    private JobApplicationResponse map(JobApplication a) {
+        return JobApplicationResponse.builder().id(a.getId()).studentId(a.getStudent().getId())
+                .studentName(a.getStudent().getFullName()).companyId(a.getCompany().getId())
+                .companyName(a.getCompany().getName()).jobRole(a.getJobRole())
+                .applicationDate(a.getApplicationDate()).status(a.getStatus()).notes(a.getNotes())
+                .createdAt(a.getCreatedAt()).updatedAt(a.getUpdatedAt()).build();
     }
 }

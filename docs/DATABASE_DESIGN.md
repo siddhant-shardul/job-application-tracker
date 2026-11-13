@@ -1,102 +1,29 @@
-\# Database Design
+# Database design
 
+The application connects to PostgreSQL using Spring Data JPA/Hibernate. Entity mappings are the current schema source. `spring.jpa.hibernate.ddl-auto=update` is the local default and does not intentionally drop existing tables. Back up data before applying schema changes; production should provision schema through reviewed migrations and use `DDL_AUTO=validate`.
 
+## Main tables
 
-\## Project
-
-
-
-Student Placement / Job Application Tracker
-
-
-
-\## Initial Tables
-
-
-
-\### companies
-
-
-
-Stores company details.
-
-
-
-| Column | Type | Purpose |
-
+| Table | Purpose | Key relationships |
 |---|---|---|
+| `users` | Login identity, BCrypt password hash and role | One user can own one student profile |
+| `students` | Academic, contact and profile details | Unique `user_id`; unique profile email |
+| `companies` | Employer directory | Referenced by jobs and applications |
+| `jobs` | Job postings, skills, eligibility, salary and deadline | Many jobs can belong to one company |
+| `job_applications` | Student application history and status | Many applications can belong to one student/company |
+| `resumes` | Private resume metadata and filesystem storage key | Unique one-to-one student reference |
 
-| id | BIGINT | Primary key |
+`job_applications` has a uniqueness constraint on `(student_id, company_id, job_role)` to help prevent duplicate submissions. The service checks duplicates before insert as well. Job applications preserve the company and role values as text on the application row, rather than maintaining a job-posting FK. Resume binary files are stored outside the database; only metadata and a random storage key are persisted in `resumes`.
 
-| name | VARCHAR | Company name |
+## Relationships and integrity
 
-| location | VARCHAR | Company location |
+- `students.user_id` is unique and non-null.
+- `resumes.student_id` is unique and non-null.
+- `jobs.company_id` is non-null.
+- `job_applications.student_id` and `company_id` are non-null.
+- Job deadline and `active` are checked by the application service before a student can apply.
+- Student identity is derived from the authenticated JWT, not accepted from the request body.
 
-| website | VARCHAR | Company website |
+## Operational notes
 
-| contact\_email | VARCHAR | HR/contact email |
-
-| created\_at | TIMESTAMP | Record creation time |
-
-| updated\_at | TIMESTAMP | Last update time |
-
-
-
-\## Future Tables
-
-
-
-\### students
-
-
-
-Stores student profile data.
-
-
-
-\### job\_applications
-
-
-
-Stores applications submitted by students to companies.
-
-
-
-\### skills
-
-
-
-Stores student skills.
-
-
-
-\### resumes
-
-
-
-Stores uploaded resume metadata.
-
-
-
-\## Relationships
-
-
-
-One student can have many job applications.
-
-
-
-One company can have many job applications.
-
-
-
-The job\_applications table will connect students and companies.
-
-
-
-\## First API
-
-
-
-The first CRUD API will be for companies because it is simple and does not require authentication.
-
+Keep `UPLOAD_DIRECTORY` private and persistent, back it up, and do not expose it as a static web directory. Database credentials and JWT signing keys must come from environment variables or a secret manager. No seed/demo users, companies, jobs or applications are inserted automatically.

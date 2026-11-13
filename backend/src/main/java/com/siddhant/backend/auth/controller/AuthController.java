@@ -7,6 +7,8 @@ import com.siddhant.backend.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -27,5 +29,10 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request) {
 
         return authService.login(request);
+    }
+    @GetMapping("/me")
+    public Map<String, Object> me(Authentication authentication) {
+        var user = authService.getUser(authentication.getName());
+        return Map.of("id", user.getId(), "fullName", user.getFullName(), "email", user.getEmail(), "role", user.getRole().name());
     }
 }
